@@ -1,29 +1,21 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require("puppeteer");
 
-let electronicUrl = 'https://nshopvn.com/';
-(async () => {
-  const browser = await puppeteer.launch({ headless: true });
+const start = async () => {
+  const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  await page.goto(electronicUrl);
-
-  let electronicData = await page.evaluate(() => {
-    let products = [];
-    let product_wrapper = document.querySelectorAll('.product-wrapper');
-    product_wrapper.forEach((product) => {
-      let dataJson = {};
-      try {
-        dataJson.img = product.querySelector('.image > img').src;
-        dataJson.title = product.querySelector('.woocommerce-loop-product__title').innerText;
-        dataJson.price = product.querySelector('.price').innerText;
-      }
-      catch (err) {
-          console.log(err)
-      }
-      products.push(dataJson);
-    });
-    return products;
+  await page.goto('https://www.etsy.com/shop/atolyeTEE');
+  page.on('console', msg => {
+    console.log({msg })
   });
+  const lastNumberLi = await page.evaluate(() => {
+    const pagination = document.querySelector('.wt-action-group.wt-list-inline.wt-flex-no-wrap.wt-flex-no-wrap.wt-pt-lg-1.wt-pb-lg-3')
+    const liArr = pagination.querySelectorAll('li')
+    const lastNumberLi = liArr[liArr.length - 2]
+    const pageNumbers = /\d+/g.exec(lastNumberLi.innerText)
+    return pageNumbers
+  })
+  console.log(lastNumberLi)
+  await browser.close();
+};
 
-   console.log(electronicData);
-   await browser.close();
-})();
+start();
