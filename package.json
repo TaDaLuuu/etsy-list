@@ -5,12 +5,13 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "start": "nodemon main.js"
   },
   "keywords": [
     "puppeteer"
   ],
-  "author": "Dang Thanh Long",
+  "author": "GodGroup",
   "license": "ISC",
   "dependencies": {
     "puppeteer": "^2.1.1"

@@ -1,32 +1,65 @@
 const puppeteer = require("puppeteer");
+const image = require("./image");
+const test = require("./test");
 
 const start = async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  const url = "https://www.etsy.com/shop/atolyeTEE?page=0";
-  await page.goto(url);
-  page.on("console", (msg) => {
-    console.log({ msg });
-  });
-  const lastNumberLi = await page.evaluate(() => {
-    const pagination = document.querySelector(
-      ".wt-action-group.wt-list-inline.wt-flex-no-wrap.wt-flex-no-wrap.wt-pt-lg-1.wt-pb-lg-3"
-    );
-    const liArr = pagination.querySelectorAll("li");
-    const lastNumberLi = liArr[liArr.length - 2];
-    const pageNumbers = /\d+/g.exec(lastNumberLi.innerText);
-    return pageNumbers;
-  });
+  const extractPartners = async (url) => {
+    const page = await browser.newPage();
+    await page.goto(url);
+    page.on("console", (msg) => {
+      console.log({ msg });
+    });
 
-  const partners = await page.evaluate(() => {
-    Array.from(document.querySelectorAll("v2-listing-card")).map((ele) => ({
-      image: ele.querySelector(".height-placeholder > img").src,
-    }));
-  });
-  const nextPageNumber = parseInt(url.match(/page=(\d+)$/)[1], 10) + 1;
-  const nextUrl = `https://www.etsy.com/shop/atolyeTEE?page=${nextPageNumber}`;
-  await page.close();
-  console.log(lastNumberLi);
+    const lastNumberLi = await page.evaluate(() => {
+      const pagination = document.querySelector(
+        ".wt-action-group.wt-list-inline.wt-flex-no-wrap.wt-flex-no-wrap.wt-pt-lg-1.wt-pb-lg-3"
+      );
+      const liArr = pagination.querySelectorAll("li");
+      const lastNumberLi = liArr[liArr.length - 2];
+      const pageNumbers = /\d+/g.exec(lastNumberLi.innerText);
+      return pageNumbers;
+    });
+
+    const partners = await page.evaluate(async () => {
+      const products = [];
+      const product_wrapper = document.querySelectorAll(".v2-listing-card");
+
+      for (const product of product_wrapper) {
+        const dataJson = {};
+        try {
+          dataJson.img = product.querySelector(
+            ".v2-listing-card__img .height-placeholder > img"
+          ).src;
+          dataJson.title = product.querySelector(
+            ".v2-listing-card__info > div > h3"
+          ).innerText;
+          dataJson.link = product.querySelector(
+            ".v2-listing-card .listing-link"
+          ).href;
+        } catch (err) {
+          console.log(err);
+        }
+        products.push(dataJson);
+      }
+      return products;
+    });
+
+    await page.close();
+
+    const nextPageNumber = parseInt(url.match(/page=(\d+)$/)[1], 10) + 1;
+    if (nextPageNumber < Number(lastNumberLi) + 1) {
+      const nextUrl = `https://www.etsy.com/shop/atolyeTEE?page=${nextPageNumber}`;
+      return partners.concat(await extractPartners(nextUrl));
+    } else {
+      return partners;
+    }
+  };
+
+  const browser = await puppeteer.launch();
+  const url = "https://www.etsy.com/shop/atolyeTEE?page=16";
+  const partners = await extractPartners(url);
+
+  console.log({ partners });
   await browser.close();
 };
 
